@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="60mm" viewBox="0 0 100 60">
+  <rect x="2" y="2" width="96" height="56" rx="0" fill="none" stroke="black"/>
+  <circle cx="15" cy="15" r="3" fill="none" stroke="black"/>
+  <circle cx="85" cy="15" r="3" fill="none" stroke="black"/>
+  <circle cx="15" cy="45" r="3" fill="none" stroke="black"/>
+  <circle cx="85" cy="45" r="3" fill="none" stroke="black"/>
+  <path d="M35 30 H65 M50 15 V45" fill="none" stroke="black"/>
+</svg>
