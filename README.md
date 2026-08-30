@@ -3,7 +3,10 @@
 Version actuelle : **1.3.0**
 
 Interface Windows pour le Dobot V1.0 Kickstarter utilisant le serveur officiel
-`DobotServer.exe` sur `127.0.0.1:5555`.
+`DobotServer.exe` sur `127.0.0.1:5555`. L'application cherche d'abord le serveur
+à côté de son exécutable, puis dans l'ancien emplacement du projet. Un autre
+chemin peut être choisi dans `Diagnostic COM` ou fourni avec la variable
+d'environnement `DOBOT_SERVER_EXE`.
 
 ## Fonctions
 
@@ -22,7 +25,9 @@ Interface Windows pour le Dobot V1.0 Kickstarter utilisant le serveur officiel
 
 1. Positionner J2 entre 70° et 82°, brancher le 12 V 5 A puis l’USB, et appuyer sur RESET.
 2. Fermer l'ancien `DobotClient` : un seul logiciel doit piloter le robot.
-3. Lancer `Dobot Atelier` et attendre `INITIALISATION OK`.
+3. Lancer `Dobot Atelier` et attendre `INITIALISATION OK`. Si le serveur est
+   introuvable, ouvrir `Diagnostic COM`, choisir `DobotServer.exe`, puis cliquer
+   sur `Reconnecter`.
 4. Charger un SVG et choisir `Simulation`.
 5. Placer manuellement l'outil au point d'origine, puis cliquer sur
    `Prendre la position actuelle`.

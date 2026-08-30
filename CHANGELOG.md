@@ -2,6 +2,7 @@
 
 ## 1.3.0 - 2026-08-29
 
+- chemin de `DobotServer.exe` configurable dans Diagnostic COM et mémorisé ;
 - blocage de toute commande avec télémétrie absente, ancienne ou angle initial hors limites ;
 - indicateur visible `INITIALISATION OK` / `MOUVEMENT BLOQUÉ` avec angle J2 ;
 - procédure de démarrage V1 intégrée : pose sûre, alimentation 12 V 5 A, USB puis RESET ;
