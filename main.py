@@ -14,6 +14,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from dobot_protocol import DobotConnection, Pose, startup_pose_issue
+from server_config import default_server_executable, normalize_server_executable
 from svg_parser import SvgDrawing, load_svg, transformed_paths
 
 
@@ -25,7 +26,6 @@ if getattr(sys, "frozen", False):
 else:
     CONFIG_DIR = APP_DIR
 CONFIG_FILE = CONFIG_DIR / "atelier_config.json"
-SERVER_EXE = Path.home() / "Documents" / "Codex" / "DobotTools-V1.0" / "installed" / "DobotServer.exe"
 
 
 class DobotAtelier(tk.Tk):
@@ -95,6 +95,7 @@ class DobotAtelier(tk.Tk):
         self.file_var = tk.StringVar(value="Aucun fichier chargé")
         self.info_var = tk.StringVar(value="Charge un dessin SVG pour commencer")
         self.run_state_var = tk.StringVar(value="PRÊT")
+        self.server_path_var = tk.StringVar(value=str(default_server_executable(APP_DIR)))
         self.mode_var = tk.StringVar(value="Simulation")
         self.width_var = tk.StringVar(value="80")
         self.origin_x_var = tk.StringVar(value="200")
@@ -263,17 +264,29 @@ class DobotAtelier(tk.Tk):
             return
         except OSError:
             pass
-        if SERVER_EXE.exists():
+        server_exe = self._server_executable()
+        if server_exe is not None:
             try:
                 flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-                self._server_process = subprocess.Popen([str(SERVER_EXE)], cwd=str(SERVER_EXE.parent), creationflags=flags)
+                self._server_process = subprocess.Popen([str(server_exe)], cwd=str(server_exe.parent), creationflags=flags)
                 self.status_var.set("Démarrage du serveur Dobot...")
                 self.after(1500, self._retry_connection)
                 return
             except OSError as exc:
                 self.status_var.set(f"Serveur introuvable : {exc}")
-        messagebox.showerror("Connexion", "Impossible de joindre DobotServer sur le port 5555.\nFerme l’ancien DobotClient puis démarre DobotServer.")
+        messagebox.showerror(
+            "Connexion",
+            "Impossible de joindre DobotServer sur le port 5555.\n\n"
+            "Choisis DobotServer.exe dans Diagnostic COM, puis reconnecte le robot.",
+        )
         self._set_connection_badge("DÉCONNECTÉ", "Disconnected.TLabel")
+
+    def _server_executable(self) -> Path | None:
+        raw_path = self.server_path_var.get().strip()
+        if not raw_path:
+            return None
+        path = normalize_server_executable(raw_path)
+        return path if path.is_file() else None
 
     def _retry_connection(self) -> None:
         try:
@@ -691,11 +704,30 @@ class DobotAtelier(tk.Tk):
         for row, (label, variable) in enumerate(rows):
             ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", padx=(0, 24), pady=4)
             ttk.Label(frame, textvariable=variable, font=("Segoe UI Semibold", 10)).grid(row=row, column=1, sticky="w", pady=4)
-        ttk.Button(frame, text="Tester la communication (sans mouvement)", command=self._probe_com).grid(row=len(rows), column=0, columnspan=2, sticky="ew", pady=(14, 5))
-        ttk.Button(frame, text="Tester le moteur J1 (0,30 s)", command=self._probe_motor).grid(row=len(rows) + 1, column=0, columnspan=2, sticky="ew", pady=5)
-        ttk.Button(frame, text="Reconnecter", command=self.connect_robot).grid(row=len(rows) + 2, column=0, columnspan=2, sticky="ew")
+        server_row = len(rows)
+        ttk.Label(frame, text="DobotServer.exe").grid(row=server_row, column=0, sticky="w", padx=(0, 24), pady=(10, 4))
+        ttk.Entry(frame, textvariable=self.server_path_var, width=58).grid(row=server_row, column=1, sticky="ew", pady=(10, 4))
+        ttk.Button(frame, text="Choisir DobotServer.exe...", command=self._choose_server_executable).grid(row=server_row + 1, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        ttk.Button(frame, text="Tester la communication (sans mouvement)", command=self._probe_com).grid(row=server_row + 2, column=0, columnspan=2, sticky="ew", pady=(6, 5))
+        ttk.Button(frame, text="Tester le moteur J1 (0,30 s)", command=self._probe_motor).grid(row=server_row + 3, column=0, columnspan=2, sticky="ew", pady=5)
+        ttk.Button(frame, text="Reconnecter", command=self.connect_robot).grid(row=server_row + 4, column=0, columnspan=2, sticky="ew")
         window.protocol("WM_DELETE_WINDOW", self._close_diagnostics)
         self._update_diagnostics()
+
+    def _choose_server_executable(self) -> None:
+        current = normalize_server_executable(self.server_path_var.get())
+        initial_dir = current.parent if current.parent.is_dir() else Path.home()
+        file_name = filedialog.askopenfilename(
+            title="Choisir DobotServer.exe",
+            initialdir=initial_dir,
+            filetypes=(("DobotServer", "DobotServer.exe"), ("Exécutable Windows", "*.exe")),
+            parent=self._diagnostic_window,
+        )
+        if not file_name:
+            return
+        self.server_path_var.set(file_name)
+        self._save_config()
+        self.status_var.set("Chemin DobotServer enregistré. Clique sur Reconnecter.")
 
     def _close_diagnostics(self) -> None:
         if self._diagnostic_window is not None:
@@ -793,6 +825,7 @@ class DobotAtelier(tk.Tk):
         except (OSError, ValueError):
             return
         mapping = {
+            "server_path": self.server_path_var,
             "mode": self.mode_var, "width": self.width_var, "origin_x": self.origin_x_var,
             "origin_y": self.origin_y_var, "z_work": self.z_work_var, "z_safe": self.z_safe_var,
             "rotation": self.rotation_var, "step": self.step_var, "flip_y": self.flip_y_var,
@@ -806,6 +839,7 @@ class DobotAtelier(tk.Tk):
 
     def _save_config(self) -> None:
         data = {
+            "server_path": self.server_path_var.get(),
             "mode": self.mode_var.get(), "width": self.width_var.get(),
             "origin_x": self.origin_x_var.get(), "origin_y": self.origin_y_var.get(),
             "z_work": self.z_work_var.get(), "z_safe": self.z_safe_var.get(),
