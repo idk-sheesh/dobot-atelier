@@ -68,6 +68,8 @@ CI runs them on Windows and Linux. The GUI and packaged executable target Window
 
 Current source version: **1.6.2**, experimental.
 
+[Download the Windows prerelease](https://github.com/idk-sheesh/dobot-atelier/releases/tag/v1.6.2).
+
 The arm has moved during earlier bench tests. The latest recorded hardware test
 produced no visible movement or motor noise despite changing telemetry. That
 fault remains unresolved. Sensor calibration, the usable workspace, physical
