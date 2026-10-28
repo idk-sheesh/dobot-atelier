@@ -22,7 +22,7 @@ jobs:
           python-version: "3.12"
 
       - name: Installer PyInstaller
-        run: python -m pip install pyinstaller
+        run: python -m pip install -r requirements-build.txt
 
       - name: Executer les tests
         run: python -m unittest discover -s tests -v
@@ -30,17 +30,24 @@ jobs:
       - name: Construire l'executable
         run: python -m PyInstaller --noconfirm --clean "Dobot Atelier.spec"
 
-      - name: Conserver l'executable comme artifact
+      - name: Assembler l'archive Windows
+        run: >
+          Compress-Archive -LiteralPath "dist/Dobot Atelier.exe", "README.md", "CHANGELOG.md", "docs"
+          -DestinationPath "dist/Dobot-Atelier-Windows.zip"
+
+      - name: Conserver l'archive comme artifact
         uses: actions/upload-artifact@v4
         with:
           name: Dobot-Atelier-Windows
-          path: dist/Dobot Atelier.exe
+          path: dist/Dobot-Atelier-Windows.zip
 
       - name: Creer la GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: >
-          gh release create "${{ github.ref_name }}"
-          "dist/Dobot Atelier.exe"
+          gh release create "$env:GITHUB_REF_NAME"
+          "dist/Dobot-Atelier-Windows.zip"
           --generate-notes
-          --title "Dobot Atelier ${{ github.ref_name }}"
+          --prerelease
+          --title "Dobot Atelier $env:GITHUB_REF_NAME (experimental)"
+          --notes "Experimental Windows build. Robot calibration, workspace and stopping behaviour are not qualified. The last recorded hardware test produced no observed motion; this fault remains unresolved. Read the setup and hardware-validation documents before use."

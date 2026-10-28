@@ -1,7 +1,9 @@
+import math
+import tempfile
 import unittest
 from pathlib import Path
 
-from svg_parser import load_svg, parse_path, transformed_paths
+from svg_parser import load_svg, parse_path, resample, transformed_paths
 
 
 class SvgParserTests(unittest.TestCase):
@@ -23,6 +25,29 @@ class SvgParserTests(unittest.TestCase):
         xs = [p[0] for path in paths for p in path]
         self.assertAlmostEqual(max(xs) - min(xs), 80)
         self.assertAlmostEqual(paths[0][0][0], 200)
+
+    def test_incomplete_or_unsupported_path_is_not_silently_truncated(self):
+        for data in ("M0 0 L10 0 L", "M0 0 C10 10 L20 20", "M0 0 R10 10", "M0 0 L1e999 0"):
+            with self.subTest(data=data), self.assertRaises(ValueError):
+                parse_path(data)
+
+    def test_nonfinite_shape_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid.svg"
+            path.write_text('<svg><line x1="0" y1="0" x2="inf" y2="0"/></svg>', encoding="utf-8")
+            with self.assertRaises(ValueError):
+                load_svg(path)
+
+    def test_tiny_step_is_rejected_before_allocating_unbounded_points(self):
+        with self.assertRaisesRegex(ValueError, "5000"):
+            resample([(0, 0), (100, 0)], 1e-12)
+
+    def test_invalid_transform_values_are_rejected(self):
+        drawing = load_svg(Path(__file__).parents[1] / "exemple_gabarit.svg")
+        for kwargs in ({"width_mm": math.nan}, {"origin_x": math.inf}, {"max_step_mm": 0}):
+            values = {"width_mm": 80, "origin_x": 200, "origin_y": -40, **kwargs}
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                transformed_paths(drawing, **values)
 
 
 if __name__ == "__main__":

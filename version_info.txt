@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 3, 0, 0),
-    prodvers=(1, 3, 0, 0),
+    filevers=(1, 6, 2, 0),
+    prodvers=(1, 6, 2, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -15,11 +15,11 @@ VSVersionInfo(
         u'040904B0',
         [StringStruct(u'CompanyName', u'Dobot Atelier'),
          StringStruct(u'FileDescription', u'Pilotage atelier pour Dobot V1.0'),
-         StringStruct(u'FileVersion', u'1.3.0'),
+         StringStruct(u'FileVersion', u'1.6.2'),
          StringStruct(u'InternalName', u'Dobot Atelier'),
          StringStruct(u'OriginalFilename', u'Dobot Atelier.exe'),
          StringStruct(u'ProductName', u'Dobot Atelier'),
-         StringStruct(u'ProductVersion', u'1.3.0')]
+         StringStruct(u'ProductVersion', u'1.6.2')]
       )
     ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
