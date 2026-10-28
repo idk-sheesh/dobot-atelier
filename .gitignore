@@ -7,4 +7,9 @@ atelier_config.json
 tmp*/
 ui-*.png
 research/
+cartographie_mesures*.json
+diagnostic_*.json
+reference_calibration*.json
+.build-tools*/
+*.spec.bak
 

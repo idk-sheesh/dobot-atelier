@@ -156,6 +156,8 @@ def _arc(p0: Point, rx: float, ry: float, rotation: float, large: bool, sweep: b
 
 
 def parse_path(data: str, curve_steps: int = 16) -> list[Polyline]:
+    if TOKEN_RE.sub("", data).strip(" ,\t\r\n"):
+        raise ValueError("Commande ou nombre SVG non pris en charge")
     tokens = TOKEN_RE.findall(data.replace(",", " "))
     paths: list[Polyline] = []
     path: Polyline = []
@@ -187,9 +189,11 @@ def parse_path(data: str, curve_steps: int = 16) -> list[Polyline]:
             last_cubic = last_quad = None
             continue
         needed = counts[upper]
-        if i + needed > len(tokens) or tokens[i].isalpha():
-            break
+        if i + needed > len(tokens) or any(token.isalpha() for token in tokens[i:i + needed]):
+            raise ValueError("Commande SVG incomplète")
         values = [float(v) for v in tokens[i:i + needed]]
+        if not all(math.isfinite(value) for value in values):
+            raise ValueError("Coordonnée SVG non finie")
         i += needed
 
         def point(x: float, y: float) -> Point:
@@ -278,6 +282,8 @@ def load_svg(file_name: str | Path, curve_steps: int = 16) -> SvgDrawing:
         matrix = _multiply(inherited, parse_transform(element.get("transform")))
         for path in _shape_paths(element, curve_steps):
             transformed = [_transform_point(point, matrix) for point in path]
+            if not all(math.isfinite(value) for point in transformed for value in point):
+                raise ValueError("Coordonnée SVG non finie")
             if len(transformed) >= 2:
                 paths.append(transformed)
         for child in element:
@@ -299,6 +305,8 @@ def resample(path: Polyline, max_step: float) -> Polyline:
     for p0, p1 in zip(path, path[1:]):
         distance = math.dist(p0, p1)
         count = max(1, math.ceil(distance / max_step))
+        if len(result) + count > 5000:
+            raise ValueError("Trajectoire trop dense : augmente le pas maximal (5000 points maximum).")
         for i in range(1, count + 1):
             t = i / count
             result.append((p0[0] + (p1[0] - p0[0]) * t, p0[1] + (p1[1] - p0[1]) * t))
@@ -314,6 +322,10 @@ def transformed_paths(
     flip_y: bool = True,
     max_step_mm: float = 3,
 ) -> list[Polyline]:
+    if not all(math.isfinite(value) for value in (drawing.width, width_mm, origin_x, origin_y, rotation_deg, max_step_mm)):
+        raise ValueError("Paramètre de transformation non fini")
+    if max_step_mm <= 0:
+        raise ValueError("Le pas maximal doit être positif")
     if drawing.width <= 0 or width_mm <= 0:
         raise ValueError("La largeur du dessin doit être positive")
     scale = width_mm / drawing.width
